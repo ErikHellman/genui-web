@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^6.0.1"
+    "vite": "^6.0.1",
+    "vite-plugin-pwa": "^1.1.0",
+    "workbox-window": "^7.4.0"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79"
