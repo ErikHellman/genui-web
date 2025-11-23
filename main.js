@@ -1,24 +1,268 @@
 import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
+// ===== State Management =====
+const STATE_KEY = 'genui-chat-state'
+let messages = []
+let currentTheme = null
+
+// ===== DOM Elements =====
+const messagesContainer = document.getElementById('messages')
+const chatForm = document.getElementById('chat-form')
+const messageInput = document.getElementById('message-input')
+const themeToggle = document.getElementById('theme-toggle')
+const newChatButton = document.getElementById('new-chat')
+
+// ===== Initialization =====
+function init() {
+  loadState()
+  setupEventListeners()
+  renderMessages()
+  loadTheme()
+}
+
+// ===== Local Storage =====
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STATE_KEY)
+    if (saved) {
+      const state = JSON.parse(saved)
+      messages = state.messages || []
+    }
+  } catch (e) {
+    console.error('Failed to load state:', e)
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify({ messages }))
+  } catch (e) {
+    console.error('Failed to save state:', e)
+  }
+}
+
+// ===== Theme Management =====
+function loadTheme() {
+  try {
+    currentTheme = localStorage.getItem('theme')
+    if (currentTheme) {
+      document.documentElement.setAttribute('data-theme', currentTheme)
+    }
+  } catch (e) {
+    console.error('Failed to load theme:', e)
+  }
+}
+
+function toggleTheme() {
+  const html = document.documentElement
+  const currentTheme = html.getAttribute('data-theme')
+
+  let newTheme
+  if (currentTheme === 'dark') {
+    newTheme = 'light'
+  } else if (currentTheme === 'light') {
+    newTheme = null
+  } else {
+    // No explicit theme, use system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    newTheme = prefersDark ? 'light' : 'dark'
+  }
+
+  if (newTheme) {
+    html.setAttribute('data-theme', newTheme)
+    localStorage.setItem('theme', newTheme)
+  } else {
+    html.removeAttribute('data-theme')
+    localStorage.removeItem('theme')
+  }
+}
+
+// ===== Event Listeners =====
+function setupEventListeners() {
+  // Chat form submission
+  chatForm.addEventListener('submit', handleSubmit)
+
+  // Auto-resize textarea
+  messageInput.addEventListener('input', autoResizeTextarea)
+
+  // Theme toggle
+  themeToggle.addEventListener('click', toggleTheme)
+
+  // New chat
+  newChatButton.addEventListener('click', handleNewChat)
+
+  // Enter to send, Shift+Enter for new line
+  messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      chatForm.dispatchEvent(new Event('submit'))
+    }
+  })
+}
+
+// ===== Message Handling =====
+async function handleSubmit(e) {
+  e.preventDefault()
+
+  const text = messageInput.value.trim()
+  if (!text) return
+
+  // Add user message
+  addMessage('user', text)
+
+  // Clear input and reset height
+  messageInput.value = ''
+  messageInput.style.height = 'auto'
+
+  // Show typing indicator
+  showTypingIndicator()
+
+  // Simulate assistant response
+  await simulateAssistantResponse(text)
+}
+
+function addMessage(role, content) {
+  const message = {
+    role,
+    content,
+    timestamp: Date.now()
+  }
+
+  messages.push(message)
+  saveState()
+  renderMessages()
+  scrollToBottom()
+}
+
+async function simulateAssistantResponse(userMessage) {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000))
+
+  // Remove typing indicator
+  hideTypingIndicator()
+
+  // Generate a mock response
+  const responses = [
+    "I understand. This is a demo chat interface with offline support. In a production environment, this would connect to a local LLM for generating UI components.",
+    "That's interesting! This chat UI is built with vanilla JavaScript and includes PWA capabilities for offline use.",
+    "I see what you mean. The generative UI features would allow me to create custom interface elements based on your needs.",
+    "Thanks for sharing that. This interface stores messages locally using localStorage, so your conversation persists even offline.",
+    "Great question! This application is designed to work fully offline as a Progressive Web App (PWA)."
+  ]
+
+  const response = responses[Math.floor(Math.random() * responses.length)]
+  addMessage('assistant', response)
+}
+
+function showTypingIndicator() {
+  const indicator = document.createElement('div')
+  indicator.className = 'typing-indicator'
+  indicator.id = 'typing-indicator'
+  indicator.innerHTML = `
+    <div class="typing-indicator-content">
+      <div class="message-avatar">AI</div>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
     </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+  `
+  messagesContainer.appendChild(indicator)
+  scrollToBottom()
+}
 
-setupCounter(document.querySelector('#counter'))
+function hideTypingIndicator() {
+  const indicator = document.getElementById('typing-indicator')
+  if (indicator) {
+    indicator.remove()
+  }
+}
+
+function handleNewChat() {
+  if (messages.length === 0) return
+
+  const confirm = window.confirm('Start a new chat? Current conversation will be saved.')
+  if (confirm) {
+    messages = []
+    saveState()
+    renderMessages()
+  }
+}
+
+// ===== Rendering =====
+function renderMessages() {
+  // Clear container except for welcome message
+  messagesContainer.innerHTML = ''
+
+  if (messages.length === 0) {
+    // Show welcome message
+    messagesContainer.innerHTML = `
+      <div class="welcome-message">
+        <h2>Welcome to GenUI Chat</h2>
+        <p>Start a conversation below. Your messages are stored locally and work offline.</p>
+      </div>
+    `
+    return
+  }
+
+  // Render all messages
+  messages.forEach(message => {
+    const messageEl = createMessageElement(message)
+    messagesContainer.appendChild(messageEl)
+  })
+}
+
+function createMessageElement(message) {
+  const div = document.createElement('div')
+  div.className = `message ${message.role}`
+
+  const avatar = message.role === 'user' ? 'You' : 'AI'
+
+  div.innerHTML = `
+    <div class="message-content">
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-text">${escapeHtml(message.content)}</div>
+    </div>
+  `
+
+  return div
+}
+
+// ===== Utilities =====
+function autoResizeTextarea() {
+  messageInput.style.height = 'auto'
+  messageInput.style.height = messageInput.scrollHeight + 'px'
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+  })
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+// ===== Service Worker Registration =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      console.log('Service Worker registered:', registration.scope)
+
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update()
+      }, 60000) // Check every minute
+    } catch (error) {
+      console.log('Service Worker registration failed:', error)
+    }
+  })
+}
+
+// ===== Start the app =====
+init()
