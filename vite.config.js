@@ -1,7 +1,22 @@
 import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  plugins: [
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: '.',
+      filename: 'sw.js',
+      injectManifest: {
+        globPatterns: []
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      }
+    })
+  ],
   build: {
     // Generate sourcemaps for debugging
     sourcemap: true,

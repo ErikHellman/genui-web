@@ -269,9 +269,10 @@ function escapeHtml(text) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        type: 'module'
-      })
+      const registration = await navigator.serviceWorker.register(
+        import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw',
+        { type: 'module' }
+      )
       console.log('Service Worker registered:', registration.scope)
 
       // Initialize WebLLM engine with service worker
