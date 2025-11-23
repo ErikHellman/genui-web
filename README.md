@@ -5,12 +5,14 @@ A progressive web app (PWA) featuring a ChatGPT-like interface for generative UI
 ## Features
 
 - 💬 **Chat Interface** - Clean, modern chat UI similar to ChatGPT
+- 🤖 **In-Browser LLM** - Powered by WebLLM for client-side AI inference
 - 📱 **Fully Responsive** - Optimized for desktop, tablet, and mobile devices
 - 🌙 **Dark/Light Theme** - Automatic theme detection with manual toggle
 - 📴 **Offline Support** - Full PWA with service worker caching
 - 💾 **Local Storage** - Messages persist across sessions
 - ⚡ **Fast & Lightweight** - Vanilla JavaScript with no framework overhead
 - 🎨 **Accessible** - WCAG compliant with keyboard navigation
+- 🔒 **Privacy First** - All AI processing happens locally in your browser
 
 ## Getting Started
 
@@ -63,6 +65,7 @@ The service worker provides:
 - Network-first strategy for dynamic content
 - Background cache updates
 - Offline fallback support
+- WebLLM engine hosting for persistent AI inference
 
 ## Architecture
 
@@ -70,8 +73,9 @@ The service worker provides:
 
 - **Vite** - Fast build tool and dev server
 - **Vanilla JavaScript** - No framework dependencies
+- **WebLLM** - In-browser LLM inference engine
 - **CSS Variables** - Dynamic theming support
-- **Service Worker** - PWA functionality
+- **Service Worker** - PWA functionality and WebLLM hosting
 - **LocalStorage API** - State persistence
 
 ### File Structure
@@ -104,9 +108,31 @@ The app uses modern web standards:
 - LocalStorage API
 - Async/Await
 
+## WebLLM Integration
+
+This app uses [WebLLM](https://webllm.mlc.ai/) to run large language models directly in the browser using WebGPU. The LLM inference happens entirely on your device, ensuring privacy and enabling offline functionality.
+
+### How It Works
+
+- **Service Worker Architecture**: WebLLM runs in a service worker, keeping the model loaded even when navigating between pages
+- **Local Inference**: All AI processing happens on your device using WebGPU
+- **Model**: Currently configured with Llama-3.2-3B-Instruct-q4f32_1-MLC (can be changed in `main.js`)
+- **Privacy**: No data is sent to external servers
+
+### Requirements
+
+- Modern browser with WebGPU support (Chrome 113+, Edge 113+)
+- Sufficient RAM (at least 4GB recommended)
+- Initial model download (approximately 1.5GB) cached locally after first use
+
+### First Use
+
+On first launch, the app will download the LLM model to your browser's cache. This may take a few minutes depending on your internet connection. Subsequent uses will load instantly from cache.
+
 ## Future Enhancements
 
-- Integration with local LLM for generative UI
+- Model selection UI
+- Streaming responses
 - Message export functionality
 - Multiple conversation support
 - Voice input support

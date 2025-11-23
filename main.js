@@ -1,9 +1,11 @@
 import './style.css'
+import { CreateServiceWorkerMLCEngine } from "@mlc-ai/web-llm";
 
 // ===== State Management =====
 const STATE_KEY = 'genui-chat-state'
 let messages = []
 let currentTheme = null
+let engine = null
 
 // ===== DOM Elements =====
 const messagesContainer = document.getElementById('messages')
@@ -135,23 +137,39 @@ function addMessage(role, content) {
 }
 
 async function simulateAssistantResponse(userMessage) {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000))
+  try {
+    // Check if engine is initialized
+    if (!engine) {
+      hideTypingIndicator()
+      addMessage('assistant', 'WebLLM engine is still initializing. Please wait a moment and try again.')
+      return
+    }
 
-  // Remove typing indicator
-  hideTypingIndicator()
+    // Prepare conversation history for the LLM
+    const conversationMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
 
-  // Generate a mock response
-  const responses = [
-    "I understand. This is a demo chat interface with offline support. In a production environment, this would connect to a local LLM for generating UI components.",
-    "That's interesting! This chat UI is built with vanilla JavaScript and includes PWA capabilities for offline use.",
-    "I see what you mean. The generative UI features would allow me to create custom interface elements based on your needs.",
-    "Thanks for sharing that. This interface stores messages locally using localStorage, so your conversation persists even offline.",
-    "Great question! This application is designed to work fully offline as a Progressive Web App (PWA)."
-  ]
+    // Generate response using WebLLM
+    const completion = await engine.chat.completions.create({
+      messages: conversationMessages,
+      stream: false,
+      temperature: 0.7,
+      max_tokens: 512
+    })
 
-  const response = responses[Math.floor(Math.random() * responses.length)]
-  addMessage('assistant', response)
+    // Remove typing indicator
+    hideTypingIndicator()
+
+    // Extract response content
+    const assistantMessage = completion.choices[0].message.content
+    addMessage('assistant', assistantMessage)
+  } catch (error) {
+    console.error('Error generating response:', error)
+    hideTypingIndicator()
+    addMessage('assistant', `Error: ${error.message || 'Failed to generate response. Please try again.'}`)
+  }
 }
 
 function showTypingIndicator() {
@@ -247,19 +265,34 @@ function escapeHtml(text) {
   return div.innerHTML
 }
 
-// ===== Service Worker Registration =====
+// ===== Service Worker Registration & WebLLM Engine Initialization =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js')
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        type: 'module'
+      })
       console.log('Service Worker registered:', registration.scope)
+
+      // Initialize WebLLM engine with service worker
+      console.log('Initializing WebLLM engine...')
+      engine = await CreateServiceWorkerMLCEngine(
+        "Llama-3.2-3B-Instruct-q4f32_1-MLC", // Default model
+        {
+          initProgressCallback: (progress) => {
+            console.log('WebLLM init progress:', progress)
+            // You can update UI here to show loading progress
+          }
+        }
+      )
+      console.log('WebLLM engine initialized successfully')
 
       // Check for updates periodically
       setInterval(() => {
         registration.update()
       }, 60000) // Check every minute
     } catch (error) {
-      console.log('Service Worker registration failed:', error)
+      console.error('Service Worker registration or WebLLM initialization failed:', error)
     }
   })
 }

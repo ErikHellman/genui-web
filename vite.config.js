@@ -18,10 +18,24 @@ export default defineConfig({
     // Enable HTTPS for testing PWA features locally
     // https: true,
     port: 5173,
-    open: true
+    open: true,
+    // Headers required for WebLLM (SharedArrayBuffer support)
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin'
+    }
   },
   preview: {
     port: 4173,
-    open: true
+    open: true,
+    // Headers required for WebLLM (SharedArrayBuffer support)
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin'
+    }
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    exclude: ['@mlc-ai/web-llm']
   }
 })
