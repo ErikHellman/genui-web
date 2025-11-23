@@ -1,5 +1,8 @@
 // Service Worker for GenUI Chat PWA
 // Provides offline support and caching
+// Integrates WebLLM for in-browser LLM inference
+
+import { ServiceWorkerMLCEngineHandler } from "@mlc-ai/web-llm";
 
 const CACHE_NAME = 'genui-chat-v1'
 const RUNTIME_CACHE = 'genui-runtime-v1'
@@ -34,9 +37,16 @@ self.addEventListener('install', (event) => {
   )
 })
 
-// Activate event - clean up old caches
+// Initialize WebLLM handler
+let webLLMHandler;
+
+// Activate event - clean up old caches and initialize WebLLM
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...')
+
+  // Initialize WebLLM handler
+  webLLMHandler = new ServiceWorkerMLCEngineHandler();
+  console.log('[SW] WebLLM handler initialized')
 
   event.waitUntil(
     caches.keys()
